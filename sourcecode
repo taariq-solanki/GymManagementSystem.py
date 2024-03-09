@@ -1,0 +1,192 @@
+from datetime import datetime
+
+class Thala07Fitness:
+    def _init_(self):
+        self.customers = {}
+        self.memberships = {}
+        self.next_customer_id = 1
+        self.next_membership_id = 1
+
+    def register_customer(self):
+        name = input("Enter customer name: ")
+        phone_no = int(input("Enter customer phone number: "))
+        join_date = input("Enter customer join date (DD/MM/YYYY): ")
+
+        new_customer = Customer(name, phone_no, join_date)
+        self.customers[self.next_customer_id] = new_customer
+        self.next_customer_id += 1
+
+        print(f"\nCustomer {new_customer.name} registered successfully with ID {self.next_customer_id - 1}.")
+
+    def add_membership(self):
+        print("\nSelect membership type:")
+        print("1. Premium (Gym + Cardio + Zumba + Crossfit + Ice Bath + Swimming + Steam)")
+        print("2. Diamond (Gym + Cardio + Crossfit + Zumba)")
+        print("3. Gold (Gym + Cardio + Crossfit)")
+        print("4. Silver (Gym + Cardio + Ice Bath)")
+        print("5. Bronze (Gym + Cardio)")
+
+        choice = input("Enter your choice: ")
+
+        if choice in ["1", "2", "3", "4", "5"]:
+            type, facilities, cost = self.get_membership_details(choice)
+            self.memberships[self.next_membership_id] = Membership(type, facilities, cost)
+            print(f"\nMembership {type} added successfully with ID {self.next_membership_id}.")
+            self.next_membership_id += 1
+        else:
+            print("\nInvalid choice. Please enter a valid option.")
+
+    def get_membership_details(self, choice):
+        membership_data = {
+            "1": ("Premium", "Gym, Cardio, Zumba, Crossfit, Ice Bath, Swimming, Steam", {"1month": 20000.00, "3month": 57000.00, "6month": 108000.00, "12month": 204000.00}),
+            "2": ("Diamond", "Gym, Cardio, Crossfit, Zumba", {"1month": 15000.00, "3month": 42000.00, "6month": 78000.00, "12month": 144000.00}),
+            "3": ("Gold", "Gym, Cardio, Crossfit", {"1month": 10000.00, "3month": 27000.00, "6month": 48000.00, "12month": 90000.00}),
+            "4": ("Silver", "Gym, Cardio, Ice Bath", {"1month": 8000.00, "3month": 21000.00, "6month": 36000.00, "12month": 66000.00}),
+            "5": ("Bronze", "Gym, Cardio", {"1month": 5000.00, "3month": 12000.00, "6month": 21000.00, "12month": 39000.00}),
+        }
+
+        type, facilities, cost = membership_data[choice]
+        return type, facilities, cost
+
+    def choose_membership(self):
+        customer_id = int(input("\nEnter customer ID: "))
+        membership_id = int(input("Enter membership ID: "))
+
+        if customer_id not in self.customers:
+            print("\nCustomer not found.")
+            return
+
+        if membership_id not in self.memberships:
+            print("\nMembership not found.")
+            return
+
+        membership_cost = self.memberships[membership_id].cost
+        print(f"\nMembership {self.memberships[membership_id].type} costs:")
+        for tenure, price in membership_cost.items():
+            print(f"{tenure.capitalize()}: ₹{price:.2f}")
+
+        tenure = input("\nEnter the tenure (1month/3month/6month/12month): ")
+        if tenure not in membership_cost:
+            print("\nInvalid tenure. Please choose from available options.")
+            return
+
+        confirm = input("\nDo you want to proceed with the payment? (yes/no): ")
+
+        if confirm.lower() == "yes":
+            amount_paid = float(input("Enter the amount paid: "))
+
+            if amount_paid < membership_cost[tenure]:
+                print("\nInsufficient payment. Please pay the full amount.")
+                return
+
+            payment_method = input("\nChoose payment method (UPI-GPay, Paytm, PhonePe, Cash, Bank Transfer): ")
+            print(f"\nYou are paying ₹{membership_cost[tenure]:.2f} for {self.memberships[membership_id].type} membership.")
+            print(f"Payment successful via {payment_method} on {datetime.now().strftime('%Y-%m-%d')}.")
+
+            new_payment = Payment(amount_paid, datetime.now().strftime("%Y-%m-%d"))
+            self.customers[customer_id].payments.append(new_payment)
+            print(f"Payment of ₹{amount_paid:.2f} made by customer {self.customers[customer_id].name} on {new_payment.date}.")
+            self.customers[customer_id].memberships.append(self.memberships[membership_id])
+            print(f"Customer {self.customers[customer_id].name} has chosen membership {self.memberships[membership_id].type}.")
+        else:
+            print("\nPayment cancelled.")
+
+    def track_attendance(self):
+        customer_id = int(input("\nEnter customer ID: "))
+        check_in = input("Press enter to check in: ")
+        check_out = input("Press enter to check out: ")
+
+        if customer_id not in self.customers:
+            print("\nCustomer not found.")
+            return
+
+        current_month = datetime.now().strftime("%B")
+        attendance_record = {"Check-in": check_in, "Check-out": check_out}
+        self.customers[customer_id].attendance[current_month].append(attendance_record)
+        print("\nAttendance recorded successfully.")
+
+    def display_customer_info(self):
+        customer_id = int(input("\nEnter customer ID: "))
+
+        if customer_id not in self.customers:
+            print("\nCustomer not found.")
+            return
+
+        print(self.customers[customer_id])
+
+    def display_all_customers(self):
+        for customer_id, customer in self.customers.items():
+            print(customer)
+
+class Customer:
+    def _init_(self, name, phone_no, join_date):
+        self.name = name
+        self.phone_no = phone_no
+        self.join_date = join_date
+        self.memberships = []
+        self.payments = []
+        self.attendance = {"January": [], "February": [], "March": [], "April": [], "May": [], "June": [], "July": [], "August": [], "September": [], "October": [], "November": [], "December": []}
+
+    def _str_(self):
+        memberships_info = "\nMemberships: " + ", ".join([membership.type for membership in self.memberships])
+        payments_info = "\nPayments: " + ", ".join([f"₹{payment.amount:.2f} on {payment.date}" for payment in self.payments])
+        attendance_info = "\nAttendance: "
+        for month, records in self.attendance.items():
+            attendance_info += f"\n{month}: {len(records)} check-ins/check-outs"
+
+        return f"\nName: {self.name}, Phone: {self.phone_no}, Joining Date: {self.join_date}" + memberships_info + payments_info + attendance_info
+
+
+
+class Membership:
+    def _init_(self, type, facilities, cost):
+        self.type = type
+        self.facilities = facilities
+        self.cost = cost
+
+    def _str_(self):
+        return f"Type: {self.type}, Facilities: {self.facilities}, Cost: {self.cost}"
+
+class Payment:
+    def _init_(self, amount, date):
+        self.amount = amount
+        self.date = date
+
+    def _str_(self):
+        return f"Amount: ₹{self.amount:.2f}, Date: {self.date}"
+
+# Example usage:
+thalaFitness = Thala07Fitness()
+
+while True:
+    print("\n---------------------------------------------")
+    print("      Welcome to Thala 07 Fitness Club")
+    print("---------------------------------------------")
+    print("\n1. Register Customer")
+    print("2. Add Membership")
+    print("3. Choose Membership")
+    print("4. Track Attendance")
+    print("5. Display Customer Information")
+    print("6. Display All Customers")
+    print("7. Quit")
+
+    choice = input("\nEnter your choice: ")
+
+    if choice == "1":
+        thalaFitness.register_customer()
+    elif choice == "2":
+        thalaFitness.add_membership()
+    elif choice == "3":
+        thalaFitness.choose_membership()
+    elif choice == "4":
+        thalaFitness.track_attendance()
+    elif choice == "5":
+        thalaFitness.display_customer_info()
+    elif choice == "6":
+        thalaFitness.display_all_customers()
+    elif choice == "7":
+        print("\n**THALA FOR A REASON")
+        print("\n7777777777777777777777777777777777777777777777")
+        break
+    else:
+        print("\nInvalid choice. Please enter a valid option.")
